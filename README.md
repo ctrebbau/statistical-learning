@@ -1,2 +1,2 @@
 # statistical-learning
-This repo records my attempts at learning statistical learning methods
+This repo records my attempts at learning statistical learning methods with Julia
