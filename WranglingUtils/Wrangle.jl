@@ -55,7 +55,7 @@ function wrangle(path="/Users/CAT79/Job/sql_scripts/RequestArrivalTime/request_p
         :Holiday, :Distance, :TimeDiff])
 end
 
-function onehot_holiday()
+function onehot_holiday(df)
 	OneHotEncoder = @load OneHotEncoder pkg=MLJModels
 	df = coerce(df, :Holiday => Multiclass)
 
