@@ -1,6 +1,6 @@
 module Wrangle
 
-using CSV, DataFrames, Dates, Statistics, PyCall
+using CSV, DataFrames, Dates, Statistics, PyCall, MLJ
 
 function wrangle(path="/Users/CAT79/Job/sql_scripts/RequestArrivalTime/request_pick.csv")
 	function distance_between_coordinates(lat1, lon1, lat2, lon2) 
@@ -55,6 +55,14 @@ function wrangle(path="/Users/CAT79/Job/sql_scripts/RequestArrivalTime/request_p
         :Holiday, :Distance, :TimeDiff])
 end
 
+function onehot_holiday()
+	OneHotEncoder = @load OneHotEncoder pkg=MLJModels
+	df = coerce(df, :Holiday => Multiclass)
+
+	hot = OneHotEncoder(drop_last=false, ordered_factor=false, features=[:Holiday])
+	mach = fit!(machine(hot, df))
+	df = MLJ.transform(mach, df)
+end
 
 function interptime(t)
     hours = t * 2.777778e-4
@@ -62,5 +70,5 @@ function interptime(t)
 	return "$hours hours or $minutes minutes"
 end
 
-export wrangle, interptime
+export wrangle, onehot_holiday, interptime
 end # module
