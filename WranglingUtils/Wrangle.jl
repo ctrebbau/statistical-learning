@@ -38,13 +38,16 @@ function wrangle(path="/Users/CAT79/Job/sql_scripts/RequestArrivalTime/request_p
     df[!, :WeekDay] = Dates.dayofweek.(df[!, :RequestServiceTime])
     df[!, :Holiday] = map(d -> Date(d) in keys(es_holidays) ? es_holidays[Date(d)] : "workday", 
                                df[!, :StartServiceTime])
+	df[!, :IsHoliday] = df[!, :Holiday] .!= "workday" 
 	
-    df[!, :TimeDiff] = df[!, :StartServiceTime] .- df[!, :RequestServiceTime]
+	df[!, :Distance] = distance_between_coordinates.(df[!,:ClientLat], df[!,:ClientLong], df[!,:DriverLat], df[!,:DriverLong]) 
+    
+	
+	df[!, :TimeDiff] = df[!, :StartServiceTime] .- df[!, :RequestServiceTime]
 	df[!, :TimeDiff] = Dates.value.(df[!, :TimeDiff]) ./ 1000
 
-	df[!, :Distance] = distance_between_coordinates.(df[!,:ClientLat], df[!,:ClientLong], df[!,:DriverLat], df[!,:DriverLong]) 
 
-	# Filter Outliers!
+	# Filter Nonsensical cases and Outliers!
     df = filter(df -> df.Distance .>= 0, df)
 	df = filter(df -> df.TimeDiff .> 0, df)
 	df = df[df[:, :TimeDiff] .< quantile(df[:, :TimeDiff], 0.9), :]
@@ -52,14 +55,14 @@ function wrangle(path="/Users/CAT79/Job/sql_scripts/RequestArrivalTime/request_p
 	return select!(df, 
 		[:RequestServiceTime, :RequestHr, :RequestMin, :RequestSec, :ClientLat, :ClientLong, 
 		:DriverLat, :DriverLong, :StartServiceTime, :StartServiceHr, :StartServiceMin, :StartServiceSec,
-        :Holiday, :Distance, :TimeDiff])
+        :IsHoliday, :Holiday, :Distance, :TimeDiff])
 end
 
 function onehot_holiday(df)
 	OneHotEncoder = @load OneHotEncoder pkg=MLJModels
 	df = coerce(df, :Holiday => Multiclass)
 
-	hot = OneHotEncoder(drop_last=false, ordered_factor=false, features=[:Holiday])
+	hot = OneHotEncoder(drop_last=true, ordered_factor=false, features=[:Holiday])
 	mach = fit!(machine(hot, df))
 	df = MLJ.transform(mach, df)
 end
